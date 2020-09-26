@@ -6,14 +6,12 @@ import com.google.gson.Gson;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -24,44 +22,17 @@ public class Main {
 }
 
 class Args {
-    @Parameter
-    private List<String> parameters = new ArrayList<>();
-
-    @Parameter(names = "-t", description = "command")
+    @Parameter(names = {"--type", "-t"})
     String command;
-
-    @Parameter(names = "-k", description = "index in DB")
-    String index;
-
-    @Parameter(names = "-v", variableArity = true, description = "value")
-    List<String> text = new ArrayList<>();
+    @Parameter(names = {"--key", "-k"})
+    String key;
+    @Parameter(names = {"--value", "-v"})
+    String value;
+    @Parameter(names = {"--input", "-in"})
+    String filename;
 }
 
 class MainClass {
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private volatile String content = "";
-    private volatile String fileName = "";
-
-    private class Reader implements Runnable {
-        @Override
-        public void run() {
-
-        }
-    }
-
-    private String generateJSON(Args args) {
-        Gson gson = new Gson();
-        Map<String, String> json = new LinkedHashMap<>();
-        json.put("type", args.command);
-        if (!args.command.equals("exit")) {
-            json.put("key", args.index);
-        }
-        if (args.command.equals("set")) {
-            json.put("value", String.join("", args.text));
-        }
-        return gson.toJson(json);
-    }
-
     void main(String[] args) {
         String address = "127.0.0.1";
         int port = 12345;
@@ -70,19 +41,44 @@ class MainClass {
              DataInputStream input = new DataInputStream(socket.getInputStream());
              DataOutputStream output = new DataOutputStream(socket.getOutputStream());
         ) {
-            String msg = String.join(" ", args);
-            Args arguments = new Args();
-            String[] testArguments = args.clone();
+            String[] testArguments;
+            if (args[0].equals("Main")) {
+                testArguments = Arrays.copyOfRange(args, 1, args.length);
+            } else {
+                testArguments = args.clone();
+            }
 
+            Args arguments = new Args();
             JCommander.newBuilder()
                     .addObject(arguments)
                     .build()
                     .parse(testArguments);
 
-            output.writeUTF(msg);
-            System.out.println("Sent: " + generateJSON(arguments));
+            String result = "";
+            if (arguments.filename == null) {
+                Map<String, String> json = new LinkedHashMap<>();
+                json.put("type", arguments.command);
+                if (arguments.key != null) {
+                    json.put("key", arguments.key);
+                }
+                if (arguments.value != null) {
+                    json.put("value", arguments.value);
+                }
+                result = new Gson().toJson(json);
+            } else {
+                File file = new File("C:\\Users\\Yuriy Volkovskiy\\Desktop\\JSON Database\\" +
+                        "JSON Database\\task\\src\\client\\data\\" + arguments.filename);
+                result = new Scanner(file).nextLine();
+            }
+
+            System.out.println("Sent: " + result);
+            output.writeUTF(result);
+
             String res = input.readUTF();
             System.out.println("Received: " + res);
+        } catch (IOException e) {
+            System.out.println("Error while reading file");
+            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }

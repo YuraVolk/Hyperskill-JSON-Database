@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,40 +40,22 @@ class MainClass {
     void main() {
         String address = "127.0.0.1";
         int port = 12345;
-        Database database = new Database(1000);
+        Database database = new Database();
         System.out.println("Server started!");
-        try (ServerSocket server = new ServerSocket(port, 50, InetAddress.getByName(address))) {
-            while (true) {
-                try (Socket socket = server.accept();
-                     DataInputStream input = new DataInputStream(socket.getInputStream());
-                     DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-                ) {
-                    String msg = input.readUTF();
-                    Args args = new Args();
-                    JCommander.newBuilder()
-                            .addObject(args)
-                            .build()
-                            .parse(msg.split(" "));
 
-                    if (args.command.equals("exit")) {
-                        output.writeUTF("{\"response\":\"OK\"}");
-                        break;
+
+        try (ServerSocket server = new ServerSocket(port, 50, InetAddress.getByName(address))) {
+
+            while (!server.isClosed()) {
+                try {
+                    Socket client = server.accept();
+                    if (client != null) {
+                        new Thread(new ClientThread(client, server, database)).start();
                     }
-                    switch (args.command) {
-                        case "set":
-                            output.writeUTF(database.set(args.index, String.join(" ", args.text)));
-                            break;
-                        case "get":
-                            output.writeUTF(database.get(args.index));
-                            break;
-                        case "delete":
-                            output.writeUTF(database.delete(args.index));
-                            break;
-                        default:
-                            output.writeUTF("ERROR");
-                            break;
-                    }
+                } catch (SocketException e) {
+                    return;
                 }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
