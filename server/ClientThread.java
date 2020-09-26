@@ -9,6 +9,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ClientThread implements Runnable {
     class Args {
@@ -36,7 +39,7 @@ public class ClientThread implements Runnable {
             return value;
         }
 
-        public String getFslename() {
+        public String getFilename() {
             return filename;
         }
     }
@@ -66,8 +69,27 @@ public class ClientThread implements Runnable {
             String msg = dataInputStream.readUTF();
 
             Gson gson = new Gson();
-            Args args = gson.fromJson(msg, Args.class);
+            Map<String, Object> map = new LinkedHashMap<>();
+            map = gson.fromJson(msg, map.getClass());
 
+            switch ((String) map.get("type")) {
+                case "set":
+                    dataOutputStream.writeUTF(database.set((String) map.get("key"),
+                            (Map<String, Object>) map.get("value")));
+                    break;
+                case "get":
+                    dataOutputStream.writeUTF(
+                            database.get((List<String>) map.get("key")));
+                case "delete":
+                    break;
+                case "exit":
+                    dataOutputStream.writeUTF("{\"response\":\"OK\"}");
+                    socket.close();
+                    server.close();
+                    break;
+            }
+            /*Args args = gson.fromJson(msg, Args.class);
+            System.out.println(args.getCommand());
             switch (args.getCommand()) {
                 case "set":
                     dataOutputStream.writeUTF(database.set(args.getKey(), String.join(" ", args.getValue())));
@@ -83,7 +105,7 @@ public class ClientThread implements Runnable {
                     socket.close();
                     server.close();
                     break;
-            }
+            }*/
         } catch (IOException e) {
             e.printStackTrace();
         }

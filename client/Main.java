@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -66,9 +69,10 @@ class MainClass {
                 }
                 result = new Gson().toJson(json);
             } else {
-                File file = new File("C:\\Users\\Yuriy Volkovskiy\\Desktop\\JSON Database\\" +
+                Path filepath = Paths.get("C:\\Users\\Yuriy Volkovskiy\\Desktop\\JSON Database\\" +
                         "JSON Database\\task\\src\\client\\data\\" + arguments.filename);
-                result = new Scanner(file).nextLine();
+                result = String.join("\n", Files.readAllLines(filepath));
+
             }
 
             System.out.println("Sent: " + result);
