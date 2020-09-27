@@ -1,6 +1,7 @@
 package server;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -24,6 +25,13 @@ public class JSONProcessor {
 
     String getValue(String value) {
         Map<String, String> json = new LinkedHashMap<>();
+        json.put("response", "OK");
+        json.put("value", value);
+        return gson.toJson(json);
+    }
+
+    String getValue(JsonObject value) {
+        Map<String, Object> json = new LinkedHashMap<>();
         json.put("response", "OK");
         json.put("value", value);
         return gson.toJson(json);

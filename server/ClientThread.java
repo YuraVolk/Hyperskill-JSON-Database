@@ -3,6 +3,8 @@ package server;
 
 import com.beust.jcommander.JCommander;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -69,18 +71,17 @@ public class ClientThread implements Runnable {
             String msg = dataInputStream.readUTF();
 
             Gson gson = new Gson();
-            Map<String, Object> map = new LinkedHashMap<>();
-            map = gson.fromJson(msg, map.getClass());
+            JsonObject map = JsonParser.parseString(msg).getAsJsonObject();
 
-            switch ((String) map.get("type")) {
+            switch (map.get("type").getAsString()) {
                 case "set":
-                    dataOutputStream.writeUTF(database.set((String) map.get("key"),
-                            (Map<String, Object>) map.get("value")));
+                    dataOutputStream.writeUTF(database.set(map.get("key"), map.get("value")));
                     break;
                 case "get":
-                    dataOutputStream.writeUTF(
-                            database.get((List<String>) map.get("key")));
+                    dataOutputStream.writeUTF(database.get(map.get("key")));
+                    break;
                 case "delete":
+                    dataOutputStream.writeUTF(database.delete(map.get("key")));
                     break;
                 case "exit":
                     dataOutputStream.writeUTF("{\"response\":\"OK\"}");
